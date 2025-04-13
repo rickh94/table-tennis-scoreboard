@@ -8,6 +8,8 @@ import {
 import { GameMode, type GameConfig, type MatchState } from "./common";
 import PlayerScore from "./PlayerScore";
 
+// TODO: maybe animate number changing
+
 // TODO: option to hide ui
 interface PlayingGameProps {
   mode: GameMode;
@@ -15,6 +17,8 @@ interface PlayingGameProps {
   config: GameConfig;
   matchState: MatchState;
   setMatchState: Setter<MatchState>;
+  playerScored: Function;
+  playerCorrection: Function;
 }
 
 interface SidePlayer {
@@ -27,136 +31,21 @@ interface SidePlayer {
 }
 
 export default function PlayingGame(props: PlayingGameProps) {
-  const [showAdvancedConfig, setShowAdvancedConfig] = createSignal(false);
   const [player1RedNumber, setPlayer1RedNumber] = createSignal(false);
   const [player2RedNumber, setPlayer2RedNumber] = createSignal(false);
 
-  const player1Scored = () =>
-    props.setMatchState((state) => {
-      const nextScore = state.player1.score + 1;
-      // check for win
-      if (
-        nextScore >= props.config.winningScore &&
-        nextScore > state.player2.score + 1
-      ) {
-        // update games
-        let nextGames = state.player1.games + 1;
-        // check for game over or match over
-        if (nextGames > props.config.matchLength / 2) {
-          props.setMode(GameMode.MatchOver);
-        } else {
-          props.setMode(GameMode.GameOver);
-        }
-        return {
-          ...state,
-          gameLog: [
-            ...state.gameLog,
-            {
-              winner: state.player1,
-              player1Score: nextScore,
-              player2Score: state.player2.score,
-            },
-          ],
-          player1: {
-            ...state.player1,
-            games: nextGames,
-            score: nextScore,
-          },
-        };
-      }
-      return {
-        ...state,
-        player1: {
-          ...state.player1,
-          score: nextScore,
-        },
-      };
-    });
-
-  const player2Scored = () =>
-    props.setMatchState((state) => {
-      const nextScore = state.player2.score + 1;
-      // check for win
-      if (
-        nextScore >= props.config.winningScore &&
-        nextScore > state.player1.score + 1
-      ) {
-        // update games
-        let nextGames = state.player2.games + 1;
-        // check for game over or match over
-        if (nextGames > props.config.matchLength / 2) {
-          props.setMode(GameMode.MatchOver);
-        } else {
-          props.setMode(GameMode.GameOver);
-        }
-        return {
-          ...state,
-          gameLog: [
-            ...state.gameLog,
-            {
-              winner: state.player2,
-              player1Score: state.player1.score,
-              player2Score: nextScore,
-            },
-          ],
-          player2: {
-            ...state.player2,
-            games: nextGames,
-            score: nextScore,
-          },
-        };
-      }
-      return {
-        ...state,
-        player2: {
-          ...state.player2,
-          score: nextScore,
-        },
-      };
-    });
-
-  const player1Correction = () => {
-    props.setMatchState((state) => {
-      let nextScore = state.player1.score - 1;
-      if (nextScore < 0) {
-        return state;
-      }
-      return {
-        ...state,
-        player1: {
-          ...state.player1,
-          score: nextScore,
-        },
-      };
-    });
-  };
-  const player2Correction = () => {
-    props.setMatchState((state) => {
-      let nextScore = state.player2.score - 1;
-      if (nextScore < 0) {
-        return state;
-      }
-      return {
-        ...state,
-        player2: {
-          ...state.player2,
-          score: nextScore,
-        },
-      };
-    });
-  };
   const leftPlayer = (): SidePlayer =>
     props.matchState.swapped
       ? {
           ...props.matchState.player2,
-          onScore: player2Scored,
-          onCorrection: player2Correction,
+          onScore: () => props.playerScored("player2"),
+          onCorrection: () => props.playerCorrection("player2"),
           redNumber: player2RedNumber,
         }
       : {
           ...props.matchState.player1,
-          onScore: player1Scored,
-          onCorrection: player1Correction,
+          onScore: () => props.playerScored("player1"),
+          onCorrection: () => props.playerCorrection("player1"),
           redNumber: player1RedNumber,
         };
 
@@ -164,34 +53,33 @@ export default function PlayingGame(props: PlayingGameProps) {
     props.matchState.swapped
       ? {
           ...props.matchState.player1,
-          onScore: player1Scored,
-          onCorrection: player1Correction,
+          onScore: () => props.playerScored("player1"),
+          onCorrection: () => props.playerCorrection("player1"),
           redNumber: player1RedNumber,
         }
       : {
           ...props.matchState.player2,
-          onScore: player2Scored,
-          onCorrection: player2Correction,
+          onScore: () => props.playerScored("player2"),
+          onCorrection: () => props.playerCorrection("player2"),
           redNumber: player2RedNumber,
         };
 
   const handleKeyUp = (ev: KeyboardEvent) => {
-    console.log("keyboard event");
     if (props.mode === GameMode.Game) {
       ev.preventDefault();
       if (ev.key === props.config.player1Key) {
-        player1Scored();
+        props.playerScored("player1");
       } else if (ev.key === props.config.player2Key) {
-        player2Scored();
+        props.playerScored("player2");
       } else if (ev.key === props.config.scoreCorrectionKey) {
         props.setMode(GameMode.Correction);
       } else if (ev.key === props.config.player1CorrectionKey) {
         setPlayer1RedNumber(true);
-        player1Correction();
+        props.playerCorrection("player1");
         setTimeout(() => setPlayer1RedNumber(false), 300);
       } else if (ev.key === props.config.player2CorrectionKey) {
         setPlayer2RedNumber(true);
-        player2Correction();
+        props.playerCorrection("player2");
         setTimeout(() => setPlayer2RedNumber(false), 300);
       }
     } else if (props.mode === GameMode.Correction) {
@@ -200,12 +88,12 @@ export default function PlayingGame(props: PlayingGameProps) {
         ev.key === props.config.player1Key ||
         ev.key === props.config.player1CorrectionKey
       ) {
-        player1Correction();
+        props.playerCorrection("player1");
       } else if (
         ev.key === props.config.player2Key ||
         ev.key === props.config.player2CorrectionKey
       ) {
-        player2Correction();
+        props.playerCorrection("player2");
       } else if (ev.key === props.config.scoreCorrectionKey) {
         props.setMode(GameMode.Game);
       }
@@ -213,7 +101,6 @@ export default function PlayingGame(props: PlayingGameProps) {
   };
   onMount(() => {
     if (globalThis.addEventListener) {
-      console.log("added event listener");
       globalThis.addEventListener("keyup", handleKeyUp);
     }
   });

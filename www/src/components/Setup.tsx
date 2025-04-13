@@ -129,7 +129,6 @@ export default function Setup(props: SetupProps) {
       data.get("player2Name") ?? props.matchState.player2.name;
 
     const switchSides = data.get("switchSides") === "on" || false;
-    console.log(switchSides);
     const nextConfig = {
       matchLength,
       winningScore,

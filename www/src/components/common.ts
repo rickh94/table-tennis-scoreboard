@@ -5,6 +5,7 @@ export enum GameMode {
   Correction = 3,
   Setup = 4,
   SwitchingSides = 5,
+  RemoteControlSetup = 6,
 }
 
 // TODO: add config for showing swap ends reminder
@@ -28,7 +29,6 @@ export type Player = {
 };
 
 export type GameResult = {
-  winner: Player;
   player1Score: number;
   player2Score: number;
 };
@@ -50,3 +50,5 @@ export const defaultGameConfig: GameConfig = {
   player1CorrectionKey: "1",
   player2CorrectionKey: "2",
 };
+
+export type Result<T, E> = ["Ok", T] | ["Err", E];

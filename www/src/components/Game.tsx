@@ -5,6 +5,8 @@ import {
   type MatchState,
   type GameConfig,
   defaultGameConfig,
+  type Result,
+  type Player,
 } from "./common";
 import PlayingGame from "./PlayingGame";
 import GameOver from "./GameOver";
@@ -12,13 +14,32 @@ import SwitchingSides from "./SwitchingSides";
 import MatchOver from "./MatchOver";
 import Setup from "./Setup";
 import Menu from "./Menu";
+import RemoteControlSetup from "./RemoteControlSetup";
+import { API_URL } from "astro:env/client";
+import type { ScoreboardInfo } from "../bindings/ScoreboardInfo";
 
 // TODO: make option to download match data
 // TODO: load initial config from localStorage
 //
+async function getScoreboardInfo(): Promise<Result<ScoreboardInfo, string>> {
+  try {
+    const response = await fetch(`${API_URL}/init`);
+    if (!response.ok) {
+      const text = await response.text();
+      console.log(text);
+      return ["Err", `Server returned an error: ${text}`];
+    }
+    const obj = (await response.json()) as ScoreboardInfo;
+    return ["Ok", obj];
+  } catch (err) {
+    console.log(err);
+    return ["Err", `Could not get scoreboard info from the server: ${err}`];
+  }
+}
 
 export default function Game() {
   const [mode, setMode] = createSignal<GameMode>(GameMode.Game);
+  //const [mode, setMode] = createSignal<GameMode>(GameMode.RemoteControlSetup);
   const [matchState, setMatchState] = createStore<MatchState>({
     player1: {
       name: "Player 1",
@@ -37,6 +58,7 @@ export default function Game() {
   const [config, setConfig] = createStore<GameConfig>({
     ...defaultGameConfig,
   });
+  const [socket, setSocket] = createSignal<WebSocket | undefined>(undefined);
 
   onMount(() => {
     if (globalThis.localStorage) {
@@ -103,11 +125,103 @@ export default function Game() {
     }));
   };
 
+  const checkForWin = () => {
+    const {
+      player1: { score: player1Score },
+      player2: { score: player2Score },
+    } = matchState;
+    // No one has won yet
+    if (
+      player1Score < config.winningScore &&
+      player2Score < config.winningScore
+    ) {
+      return;
+    }
+    // neither player has a two point advantage, duece, there is no winner
+    if (Math.abs(player1Score - player2Score) < 2) {
+      return;
+    }
+    // at this point, one player has more than the winning score and has won by two points
+    let winner: "player1" | "player2" =
+      player1Score > player2Score ? "player1" : "player2";
+    let nextGames = matchState[winner].games + 1;
+    setMatchState(winner, (player: Player) => ({
+      ...player,
+      games: nextGames,
+    }));
+    setMatchState("gameLog", (gameLog) => [
+      ...gameLog,
+      { player1Score, player2Score },
+    ]);
+    if (nextGames > config.matchLength / 2) {
+      setMode(GameMode.MatchOver);
+    } else {
+      setMode(GameMode.GameOver);
+    }
+  };
+
+  const startRemoteControlSetup = () => {
+    setMode(GameMode.RemoteControlSetup);
+  };
+
+  const playerScored = (player: "player1" | "player2") => {
+    setMatchState(player, (p) => ({
+      ...p,
+      score: p.score + 1,
+    }));
+    checkForWin();
+  };
+
+  const playerCorrection = (player: "player1" | "player2") => {
+    setMatchState(player, (p) => ({
+      ...p,
+      score: p.score - 1 > 0 ? p.score - 1 : 0,
+    }));
+    checkForWin();
+  };
+
+  const setupAsScoreboard = async () => {
+    const [r, v] = await getScoreboardInfo();
+    if (r === "Err") {
+      alert(v);
+      return;
+    }
+    const clientEndpoint = `${globalThis.location.href}?scoreboardId=${v.scoreboardId}`;
+    console.log(clientEndpoint);
+    const conn = new WebSocket(v.scoreboardWs);
+    conn.onopen = () => {
+      setSocket(conn);
+    };
+    conn.onmessage = async (ev: MessageEvent) => {
+      console.log(ev.data);
+      //const m = await parseReceived(ev.data);
+      //if (m.t === "ChangeRoom") {
+      //  setRoom(m.c);
+      //  setMessages([]);
+      //} else {
+      //  setMessages((prev) => [...prev, m]);
+      //}
+    };
+    conn.onclose = (_ev: CloseEvent) => {
+      setSocket(undefined);
+      // TODO: do better than this.
+      alert("Disconnected");
+    };
+    // TODO: socket.onerror
+  };
+
+  onMount(() => {
+    if (globalThis.location) {
+      const _params = new URLSearchParams(globalThis.location.search);
+    }
+  });
+
   return (
     <div
       classList={{
         "min-h-screen h-auto": true,
         "bg-blue-700": mode() === GameMode.Game,
+        "bg-sky-700": mode() === GameMode.RemoteControlSetup,
         "bg-red-700": mode() === GameMode.Correction,
         "bg-green-700":
           mode() === GameMode.GameOver ||
@@ -124,6 +238,8 @@ export default function Game() {
           >
             <PlayingGame
               mode={mode()}
+              playerScored={playerScored}
+              playerCorrection={playerCorrection}
               setMode={setMode}
               setMatchState={setMatchState}
               config={config}
@@ -138,6 +254,9 @@ export default function Game() {
           </Match>
           <Match when={mode() === GameMode.MatchOver}>
             <MatchOver newMatch={newMatch} matchState={matchState} />
+          </Match>
+          <Match when={mode() === GameMode.RemoteControlSetup}>
+            <RemoteControlSetup setupAsScoreboard={setupAsScoreboard} />
           </Match>
           <Match when={mode() === GameMode.Setup}>
             <Setup
@@ -177,7 +296,7 @@ export default function Game() {
       </div>
       <Show when={mode() !== GameMode.Setup}>
         <Menu>
-          <ul class="min-w-24 text-center mb-2 bg-white border border-b-4 border-r-4 box-shadow border-black font-mono font-bold divide-y-2 divide-y-black">
+          <ul class="min-w-32 text-center mb-2 bg-white border border-b-4 border-r-4 box-shadow border-black font-mono font-bold divide-y-2 divide-y-black">
             <li class="p-2">
               <a href="/help" target="_blank" data-testid="help-button">
                 Help
@@ -191,6 +310,16 @@ export default function Game() {
                 data-testid="setup-button"
               >
                 Setup
+              </button>
+            </li>
+            <li class="p-2">
+              {/* TODO: dynamic button to setup remote control or disconnect remote control depending on socket state */}
+              <button
+                class="cursor-pointer"
+                onClick={startRemoteControlSetup}
+                data-testid="remote-button"
+              >
+                Remote Control
               </button>
             </li>
           </ul>
@@ -211,33 +340,3 @@ export default function Game() {
 //>
 //  swap
 //</button>
-/*
- *
-      {mode() !== GameMode.Setup && (
-        <>
-          <div
-            id="help"
-            class="fixed bottom-0 right-1/2 mb-4 transform translate-x-1/2"
-          >
-            <a
-              class="block py-2 px-4 font-mono font-bold text-black uppercase bg-white border border-r-4 border-b-4 border-black active:border-r-0 active:border-b-0 active:border-t-4 active:border-l-4 border-t border-l selectable"
-              href="/help"
-              target="_blank"
-              data-testid="help-button"
-            >
-              Help
-            </a>
-          </div>
-          <div id="config" class="fixed right-0 bottom-0 mr-4 mb-4">
-            <button
-              class="py-2 px-4 font-mono font-bold text-black uppercase bg-white border border-r-4 border-b-4 border-black active:border-r-0 active:border-b-0 active:border-t-4 active:border-l-4 border-t border-l-1 selectable"
-              onClick={() => setMode(GameMode.Setup)}
-              title="Configure Match Settings"
-              data-testid="setup-button"
-            >
-              Setup
-            </button>
-          </div>
-        </>
-      )}
-*/
