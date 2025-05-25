@@ -1,13 +1,17 @@
 import { createSignal, type Setter } from "solid-js";
-import { GameMode, type GameConfig, type MatchState } from "./common";
+import { GameMode, type GameConfig } from "./common";
 import ThankYou from "./ThankYou";
+import type { MatchState } from "../bindings/MatchState";
 
 interface SetupProps {
   config: GameConfig;
-  setConfig: Setter<GameConfig>;
   setMode: Setter<GameMode>;
   matchState: MatchState;
-  setMatchState: Setter<MatchState>;
+  updateConfig: (
+    nextConfig: GameConfig,
+    player1Name: string,
+    player2Name: string,
+  ) => void;
 }
 
 enum Listening {
@@ -107,6 +111,7 @@ export default function Setup(props: SetupProps) {
     setListeningFor(Listening.Player2CorrectionKey);
   };
 
+  // TODO: move some of this to callback from parent component so that it sends a match update when a player gets renamed
   const saveConfig = (ev: SubmitEvent) => {
     ev.preventDefault();
     const data = new FormData(formRef);
@@ -140,19 +145,12 @@ export default function Setup(props: SetupProps) {
       player2CorrectionKey: player2CorrectionKey(),
     };
 
-    props.setConfig(nextConfig);
+    props.updateConfig(
+      nextConfig,
+      player1Name as string,
+      player2Name as string,
+    );
 
-    props.setMatchState((state) => ({
-      ...state,
-      player1: {
-        ...state.player1,
-        name: player1Name as string,
-      },
-      player2: {
-        ...state.player2,
-        name: player2Name as string,
-      },
-    }));
     localStorage.setItem("config", JSON.stringify(nextConfig));
     localStorage.setItem("player1Name", player1Name as string);
     localStorage.setItem("player2Name", player2Name as string);
@@ -160,7 +158,6 @@ export default function Setup(props: SetupProps) {
     props.setMode(GameMode.Game);
   };
 
-  // TODO: make signals for keys, wrap everything in form, make form onsubmit save config
   return (
     <form
       action="#"
@@ -372,11 +369,10 @@ export default function Setup(props: SetupProps) {
       <section class="flex justify-start flex-row-reverse mx-auto gap-x-4 mb-8">
         <button
           class="py-2 px-8 font-mono text-2xl font-bold text-black uppercase bg-green-600 border-t-0 border-l-0 border-r-4 border-b-4 border-black active:border-r-0 active:border-b-0 active:border-t-4 active:border-l-4 selectable"
-          title="Exit setup menu"
           data-testid="setup-done-button"
           type="submit"
         >
-          Done
+          Save
         </button>
         <button
           class="py-2 px-8 font-mono text-2xl font-bold text-black uppercase bg-red-600 border-t-0 border-l-0 border-r-4 border-b-4 border-black active:border-r-0 active:border-b-0 active:border-t-4 active:border-l-4 selectable"

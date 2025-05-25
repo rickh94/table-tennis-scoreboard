@@ -1,9 +1,7 @@
-import { type Setter } from "solid-js";
-import { GameMode } from "./common";
 import ThankYou from "./ThankYou";
 
 interface SwitchingSidesProps {
-  setMode: Setter<GameMode>;
+  startGame: Function;
 }
 export default function SwitchingSides(props: SwitchingSidesProps) {
   return (
@@ -32,7 +30,7 @@ export default function SwitchingSides(props: SwitchingSidesProps) {
       <section class="mx-auto mt-2 px-8 flex justify-center">
         <button
           class="font-mono text-2xl uppercase bg-white text-black border-t-0 border-l-0 border-b-4 border-r-4 border-black px-8 py-2 font-bold active:border-b-0 active:border-r-0 active:border-t-4 active:border-l-4 selectable"
-          onClick={() => props.setMode(GameMode.Game)}
+          onClick={() => props.startGame()}
           data-testid="start-game-button"
         >
           Start Game

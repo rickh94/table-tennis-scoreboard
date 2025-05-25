@@ -3,10 +3,12 @@ import {
   onCleanup,
   onMount,
   Show,
-  type PropsWithChildren,
+  type ParentProps,
 } from "solid-js";
 
-export default function Menu(props: PropsWithChildren) {
+// TODO: add transition
+
+export default function Menu(props: ParentProps) {
   const [open, setOpen] = createSignal(false);
   let ref!: HTMLDivElement;
   let buttonRef!: HTMLButtonElement;
@@ -34,7 +36,7 @@ export default function Menu(props: PropsWithChildren) {
     <div ref={ref} id="menu" class="fixed right-0 bottom-0 mr-4 mb-4">
       <Show when={open()}>
         <nav
-          class="absolute -translate-y-full top-0 right-0 z-50"
+          class="absolute -translate-y-full top-0 right-0 z-50 cursor-pointer"
           ref={navRef}
           onClick={() => setOpen(false)}
         >

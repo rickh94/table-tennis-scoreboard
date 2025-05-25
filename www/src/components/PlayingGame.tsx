@@ -5,8 +5,11 @@ import {
   type Accessor,
   type Setter,
 } from "solid-js";
-import { GameMode, type GameConfig, type MatchState } from "./common";
+import { GameMode, type GameConfig } from "./common";
 import PlayerScore from "./PlayerScore";
+import type { MatchState } from "../bindings/MatchState";
+import type { ScoreboardInfo } from "../bindings/ScoreboardInfo";
+import type { Option } from "./common";
 
 // TODO: maybe animate number changing
 
@@ -16,9 +19,9 @@ interface PlayingGameProps {
   setMode: Setter<GameMode>;
   config: GameConfig;
   matchState: MatchState;
-  setMatchState: Setter<MatchState>;
   playerScored: Function;
   playerCorrection: Function;
+  scoreboardInfo: Option<ScoreboardInfo>;
 }
 
 interface SidePlayer {
@@ -112,6 +115,16 @@ export default function PlayingGame(props: PlayingGameProps) {
 
   return (
     <main class="grid grid-cols-2">
+      {props.scoreboardInfo.isSome && (
+        <div class="col-span-full font-sports mt-8 mb-0 w-full text-3xl font-medium tracking-widest text-center md:text-5xl xl:text-7xl">
+          <span
+            class="px-8 pb-2 w-auto border-b-4 border-black"
+            data-testid="scoreboard-title"
+          >
+            {props.scoreboardInfo.v.name}
+          </span>
+        </div>
+      )}
       <PlayerScore
         mode={props.mode}
         showBorder={true}

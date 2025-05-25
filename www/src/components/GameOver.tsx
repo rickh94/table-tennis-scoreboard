@@ -1,6 +1,6 @@
 import { onCleanup, onMount } from "solid-js";
-import type { MatchState } from "./common";
 import ThankYou from "./ThankYou";
+import type { MatchState } from "../bindings/MatchState";
 
 interface GameOverProps {
   matchState: MatchState;

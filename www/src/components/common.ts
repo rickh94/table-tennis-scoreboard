@@ -22,24 +22,6 @@ export type GameConfig = {
   player2CorrectionKey: string;
 };
 
-export type Player = {
-  name: string;
-  score: number;
-  games: number;
-};
-
-export type GameResult = {
-  player1Score: number;
-  player2Score: number;
-};
-
-export type MatchState = {
-  player1: Player;
-  player2: Player;
-  gameLog: GameResult[];
-  swapped: boolean;
-};
-
 export const defaultGameConfig: GameConfig = {
   matchLength: 5,
   winningScore: 11,
@@ -51,4 +33,19 @@ export const defaultGameConfig: GameConfig = {
   player2CorrectionKey: "2",
 };
 
-export type Result<T, E> = ["Ok", T] | ["Err", E];
+export type Result<T, E = Error> = ["Ok", T] | ["Err", E];
+export type Option<T> = { isSome: true; v: T } | { isSome: false };
+
+export const sbid = "sbId";
+
+export function unwrap<T>(o: Option<T>): T {
+  if (o.isSome) {
+    return o.v;
+  } else {
+    throw new Error("Tried to unwrap a none value");
+  }
+}
+
+export function Some<T>(v: T): Option<T> {
+  return { isSome: true, v };
+}

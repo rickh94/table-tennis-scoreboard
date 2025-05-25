@@ -1,6 +1,6 @@
 import { onCleanup, onMount } from "solid-js";
-import type { MatchState } from "./common";
 import ThankYou from "./ThankYou";
+import type { MatchState } from "../bindings/MatchState";
 
 interface MatchOverProps {
   matchState: MatchState;
@@ -35,13 +35,13 @@ export default function MatchOver(props: MatchOverProps) {
     >
       <header class="w-full flex justify-center text-center pt-20 flex-col">
         <h1
-          class="text-9xl font-normal font-sports tracking-wider"
+          class="text-4xl sm:text-9xl font-normal font-sports tracking-wider"
           data-testid="winner-text"
         >
           {winnerName()}
         </h1>
         <h2
-          class="pt-2 text-6xl font-normal font-sports tracking-wider"
+          class="pt-2 text-3xl sm:text-6xl font-normal font-sports tracking-wider"
           data-testid="wins-the-match"
         >
           Wins the Match
