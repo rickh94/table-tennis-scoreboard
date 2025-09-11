@@ -28,7 +28,7 @@ export class BacklogService {
     this.fetchEvents();
     this.intervalId = window.setInterval(() => {
       this.fetchEvents();
-    }, 1000);
+    }, 500);
   }
 
   stop() {
