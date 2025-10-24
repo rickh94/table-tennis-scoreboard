@@ -33,6 +33,7 @@ export default function Game() {
     // A game is an object with keys winner, player1score, and player2score
     gameLog: [],
     swapped: false,
+    initialServer: undefined,
   });
   const [config, setConfig] = createStore<GameConfig>({
     ...defaultGameConfig,
@@ -43,12 +44,13 @@ export default function Game() {
       const loadedConfig = JSON.parse(localStorage.getItem("config") ?? "{}");
       if (loadedConfig instanceof Object) {
         setConfig({
-          ...loadedConfig,
           ...defaultGameConfig,
+          ...loadedConfig,
         });
       }
       const player1Name = localStorage.getItem("player1Name");
       const player2Name = localStorage.getItem("player2Name");
+      const initialServer = localStorage.getItem("initialServer") as 'player1' | 'player2' | null;
       setMatchState((state) => ({
         ...state,
         player1: {
@@ -59,6 +61,7 @@ export default function Game() {
           ...state.player2,
           name: player2Name ?? state.player2.name,
         },
+        initialServer: initialServer || state.initialServer,
       }));
     }
   });
@@ -100,6 +103,7 @@ export default function Game() {
       },
       gameLog: [],
       swapped: false,
+      initialServer: state.initialServer, // Preserve the previous initial server choice
     }));
   };
 
@@ -107,7 +111,7 @@ export default function Game() {
     <div
       classList={{
         "min-h-screen h-auto": true,
-        "bg-blue-700": mode() === GameMode.Game,
+        "bg-gray-700": mode() === GameMode.Game,
         "bg-red-700": mode() === GameMode.Correction,
         "bg-green-700":
           mode() === GameMode.GameOver ||
@@ -117,7 +121,7 @@ export default function Game() {
       }}
       id="main-content"
     >
-      <div class="px-4 mx-auto max-w-4xl min-h-screen text-white xl:max-w-7xl">
+      <div class="mx-auto max-w-5xl min-h-screen text-white xl:max-w-none">
         <Switch fallback={<div>Not Implemented</div>}>
           <Match
             when={mode() === GameMode.Game || mode() === GameMode.Correction}
@@ -128,16 +132,17 @@ export default function Game() {
               setMatchState={setMatchState}
               config={config}
               matchState={matchState}
+              newGame={newGame}
             />
           </Match>
           <Match when={mode() === GameMode.GameOver}>
-            <GameOver matchState={matchState} newGame={newGame} />
+            <GameOver matchState={matchState} config={config} newGame={newGame} />
           </Match>
           <Match when={mode() === GameMode.SwitchingSides}>
             <SwitchingSides setMode={setMode} />
           </Match>
           <Match when={mode() === GameMode.MatchOver}>
-            <MatchOver newMatch={newMatch} matchState={matchState} />
+            <MatchOver newMatch={newMatch} matchState={matchState} config={config} />
           </Match>
           <Match when={mode() === GameMode.Setup}>
             <Setup
@@ -191,6 +196,22 @@ export default function Game() {
                 data-testid="setup-button"
               >
                 Setup
+              </button>
+            </li>
+            <li class="p-2">
+              <button
+                class="cursor-pointer"
+                onClick={() => {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  } else {
+                    document.documentElement.requestFullscreen();
+                  }
+                }}
+                title="Toggle fullscreen mode"
+                data-testid="fullscreen-button"
+              >
+                Fullscreen
               </button>
             </li>
           </ul>

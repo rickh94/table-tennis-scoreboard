@@ -1,3 +1,9 @@
+# Improvements
+
+* Introduction how everything works - https://youtu.be/WpFh3e7tAFg
+* Watch how live it's used - https://youtu.be/vLBiCExWjcY
+* Live version - https://tt.qu.lt/
+
 # Table Tennis Scoreboard
 
 This is the source for my [Table Tennis Scoreboard](https://tabletennisscoreboard.com)
