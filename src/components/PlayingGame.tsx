@@ -113,7 +113,12 @@ export default function PlayingGame(props: PlayingGameProps) {
       const nextScore = state.player1.score + 1;
       
       // Play score sound with updated scores
-      soundService.playScoreSound(nextScore, state.player2.score);
+      // When sides are swapped, announce scores in visual order (left player, right player)
+      if (props.matchState.swapped) {
+        soundService.playScoreSound(state.player2.score, nextScore);
+      } else {
+        soundService.playScoreSound(nextScore, state.player2.score);
+      }
       
       // If this is the first score and no initial server is set, default to player1
       const needsInitialServer = !state.initialServer && 
@@ -169,7 +174,12 @@ export default function PlayingGame(props: PlayingGameProps) {
       const nextScore = state.player2.score + 1;
       
       // Play score sound with updated scores
-      soundService.playScoreSound(state.player1.score, nextScore);
+      // When sides are swapped, announce scores in visual order (left player, right player)
+      if (props.matchState.swapped) {
+        soundService.playScoreSound(nextScore, state.player1.score);
+      } else {
+        soundService.playScoreSound(state.player1.score, nextScore);
+      }
       
       // If this is the first score and no initial server is set, default to player1
       const needsInitialServer = !state.initialServer && 
