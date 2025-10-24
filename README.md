@@ -1,6 +1,7 @@
 # Improvements
 
-* Watch how live it's used https://youtu.be/vLBiCExWjcY
+* Introduction how everything works - https://youtu.be/WpFh3e7tAFg
+* Watch how live it's used - https://youtu.be/vLBiCExWjcY
 * Live version - https://tt.qu.lt/
 
 # Table Tennis Scoreboard
